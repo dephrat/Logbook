@@ -1,50 +1,62 @@
-# Welcome to your Expo app 👋
+# Logbook
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Turns photographed paper donation forms into spreadsheet rows. Built for a food bank that logs in-kind donations on paper intake forms and re-types them into Excel each month.
 
-## Get started
+Staff photograph a stack of forms on a phone. Claude reads each photo and fills in the fields. A person reviews every form, with mismatched weights and likely duplicates flagged, then saves the batch, and the rows are inserted into the right monthly tab of the year's spreadsheet.
 
-1. Install dependencies
+In a timed run, a 50-form batch took about 15 minutes, against the food bank's own estimate of about 2 hours by hand.
 
-   ```bash
-   npm install
-   ```
+## How it works
 
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```
+Phone (Expo / React Native)                Laptop on the same Wi-Fi (Flask)
+---------------------------                --------------------------------
+Camera tab: photograph forms
+  each photo -> form record (unscanned)
+  stored locally in AsyncStorage
+                    -- POST /ocr (base64 JPEG) -->  Claude Haiku 4.5 vision
+                    <-- JSON fields --------------  JSON-only extraction prompt
+Review tab: form -> needs_review or ocr_failed
+  staff correct and approve each form
+  flags: category weights don't add up to total (> 0.5 lb off),
+         consecutive forms with identical fields (possible duplicate)
+Save tab: approved forms
+                    -- POST /append ------------->  openpyxl: year file, month tab,
+                                                    date-ordered insert, SUM totals
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+- **Status flow:** `unscanned` -> `needs_review` | `ocr_failed` -> `approved`. Failed forms reset to `unscanned` and retry when staff refresh.
+- **Parallel OCR:** photos are sent as they are taken. Each form update goes through a promise queue, so concurrent OCR results don't overwrite each other.
+- **The model leaves a field blank when it can't read it.** Nothing is saved until a person approves it.
+- **Output matches the food bank's existing spreadsheet:** same columns, perishable and non-perishable totals, and a monthly SUM row, so their reporting didn't change.
 
-## Learn more
+## Run it
 
-To learn more about developing your project with Expo, look at the following resources:
+**Server** (Python 3.10+):
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+```bash
+cd server
+pip install -r requirements.txt
+echo "ANTHROPIC_API_KEY=sk-ant-..." > .env
+python server.py          # listens on 0.0.0.0:5000
+```
 
-## Join the community
+Spreadsheets are written to `server/data/` (git-ignored).
 
-Join our community of developers creating universal apps.
+**App:**
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+```bash
+npm install
+npx expo start
+```
+
+Open it in Expo Go on a phone on the same network. On the Save tab, set the server URL to your laptop's LAN address, for example `http://192.168.1.42:5000`.
+
+## Known limitations
+
+This is a prototype built in about ten days for one site.
+
+- The server has no authentication and runs Flask in debug mode. Run it only on a trusted local network.
+- Claude's JSON reply is parsed but not validated against a schema. Structured output or tool use would be the fix.
+- `/append` isn't idempotent: retrying a save writes the rows again.
+- Forms live on a single phone's local storage. There is no multi-device sync.

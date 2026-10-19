@@ -1,0 +1,4 @@
+flask
+openpyxl
+anthropic
+python-dotenv
