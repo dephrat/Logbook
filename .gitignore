@@ -46,3 +46,6 @@ app-example
 # common sense
 .env
 server/data/
+# python
+__pycache__/
+.venv/

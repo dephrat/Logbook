@@ -202,7 +202,7 @@ export default function CameraScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#000' },
-  viewfinder: { ...StyleSheet.absoluteFillObject },
+  viewfinder: { ...StyleSheet.absoluteFill },
   overlay: { flex: 1, flexDirection: 'column', justifyContent: 'flex-end' },
   formGuide: {
     position: 'absolute',

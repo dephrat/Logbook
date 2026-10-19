@@ -65,7 +65,7 @@ export default function SaveConfirmationScreen() {
 
   async function handleDone() {
     await clearSavedFormsSummary();
-    router.push('/(tabs)/');
+    router.push('/');
   }
 
   return (

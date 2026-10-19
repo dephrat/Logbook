@@ -122,7 +122,7 @@ export default function SaveScreen() {
         { text: 'Keep', style: 'cancel' },
         { text: 'Discard', style: 'destructive', onPress: async () => {
           await clearForms();
-          router.push('/(tabs)/');
+          router.push('/');
         }},
       ]
     );
