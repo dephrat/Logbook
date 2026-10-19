@@ -38,8 +38,10 @@ Save tab: approved forms
 cd server
 pip install -r requirements.txt
 echo "ANTHROPIC_API_KEY=sk-ant-..." > .env
-python server.py          # listens on 0.0.0.0:5000
+flask --app server run --host 0.0.0.0 --port 5001
 ```
+
+(Port 5000 is taken by AirPlay Receiver on macOS, so this uses 5001.)
 
 Spreadsheets are written to `server/data/` (git-ignored).
 
@@ -50,7 +52,7 @@ npm install
 npx expo start
 ```
 
-Open it in Expo Go on a phone on the same network. On the Save tab, set the server URL to your laptop's LAN address, for example `http://192.168.1.42:5000`.
+Open it in Expo Go on a phone on the same network. On the Save tab, set the server URL to your laptop's LAN address, for example `http://192.168.1.42:5001`.
 
 ## Known limitations
 
